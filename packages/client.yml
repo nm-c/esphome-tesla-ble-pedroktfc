@@ -379,10 +379,12 @@ lock:
       - lambda: |-
           id(tesla_ble_vehicle_id)->lockVehicle(VCSEC_RKEAction_E_RKE_ACTION_UNLOCK);
           id(is_unlocked).publish_state(true);
+      - script.execute: vcsec_active_reset
     lock_action:
       - lambda: |-
           id(tesla_ble_vehicle_id)->lockVehicle(VCSEC_RKEAction_E_RKE_ACTION_LOCK);
           id(is_unlocked).publish_state(false);
+      - script.execute: vcsec_active_reset
 
 cover:
   - platform: template
@@ -445,10 +447,12 @@ cover:
       - lambda: |-
           id(tesla_ble_vehicle_id)->sendVCSECClosureMoveRequestMessage(VCSEC_ClosureMoveRequest_rearTrunk_tag, VCSEC_ClosureMoveType_E_CLOSURE_MOVE_TYPE_OPEN);
           id(is_boot_open).publish_state(true);
+      - script.execute: vcsec_active_reset
     close_action:
       - lambda: |-
           id(tesla_ble_vehicle_id)->sendVCSECClosureMoveRequestMessage(VCSEC_ClosureMoveRequest_rearTrunk_tag, VCSEC_ClosureMoveType_E_CLOSURE_MOVE_TYPE_CLOSE);
           id(is_boot_open).publish_state(false);
+      - script.execute: vcsec_active_reset
 
   - platform: template
     id: cov_frunk
@@ -467,6 +471,7 @@ cover:
       - lambda: |-
           id(tesla_ble_vehicle_id)->sendVCSECClosureMoveRequestMessage(VCSEC_ClosureMoveRequest_frontTrunk_tag, VCSEC_ClosureMoveType_E_CLOSURE_MOVE_TYPE_OPEN);
           id(is_frunk_open).publish_state(true);
+      - script.execute: vcsec_active_reset
     
 number:
   - platform: template
@@ -614,3 +619,11 @@ number:
     on_value:
       - lambda: |-
           id(tesla_ble_vehicle_id)->ble_disconnected_min_time_ = x * 1000;
+
+script:
+  - id: vcsec_active_reset
+    mode: restart
+    then:
+      - delay: 1s
+      - switch.turn_off: sw_ble_connection
+      - switch.turn_on: sw_ble_connection
