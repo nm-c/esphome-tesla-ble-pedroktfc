@@ -250,9 +250,13 @@ switch:
         return false;
       }
     turn_on_action:
-      - lambda: id(tesla_ble_vehicle_id)->sendCarServerVehicleActionMessage(tesla_ble_vehicle::BLE_CarServer_VehicleAction::SET_CHARGING_SWITCH, 1);
+      - lambda: |-
+          id(tesla_ble_vehicle_id)->sendCarServerVehicleActionMessage(tesla_ble_vehicle::BLE_CarServer_VehicleAction::SET_CHARGING_SWITCH, 1);
+          id(charging_state).publish_state("Charging");
     turn_off_action:
-      - lambda: id(tesla_ble_vehicle_id)->sendCarServerVehicleActionMessage(tesla_ble_vehicle::BLE_CarServer_VehicleAction::SET_CHARGING_SWITCH, 0);
+      - lambda: |-
+          id(tesla_ble_vehicle_id)->sendCarServerVehicleActionMessage(tesla_ble_vehicle::BLE_CarServer_VehicleAction::SET_CHARGING_SWITCH, 0);
+          id(charging_state).publish_state("Stopped");
 
   - platform: template
     id: sw_sentry_mode
@@ -279,9 +283,13 @@ switch:
       }
     restore_mode: RESTORE_DEFAULT_OFF
     turn_on_action:
-      - lambda: id(tesla_ble_vehicle_id)->sendCarServerVehicleActionMessage(tesla_ble_vehicle::BLE_CarServer_VehicleAction::SET_HVAC_SWITCH, 1);
+      - lambda: |-
+          id(tesla_ble_vehicle_id)->sendCarServerVehicleActionMessage(tesla_ble_vehicle::BLE_CarServer_VehicleAction::SET_HVAC_SWITCH, 1);
+          id(is_climate_on).publish_state(true);
     turn_off_action:
-      - lambda: id(tesla_ble_vehicle_id)->sendCarServerVehicleActionMessage(tesla_ble_vehicle::BLE_CarServer_VehicleAction::SET_HVAC_SWITCH, 0);
+      - lambda: |-
+          id(tesla_ble_vehicle_id)->sendCarServerVehicleActionMessage(tesla_ble_vehicle::BLE_CarServer_VehicleAction::SET_HVAC_SWITCH, 0);
+          id(is_climate_on).publish_state(false);
 
   - platform: template
     id: sw_steering_wheel_heat
@@ -307,9 +315,13 @@ switch:
         return false;
       }
     turn_on_action:
-      - lambda: id(tesla_ble_vehicle_id)->sendCarServerVehicleActionMessage (tesla_ble_vehicle::BLE_CarServer_VehicleAction::DEFROST_CAR, 1);
+      - lambda: |-
+          id(tesla_ble_vehicle_id)->sendCarServerVehicleActionMessage(tesla_ble_vehicle::BLE_CarServer_VehicleAction::DEFROST_CAR, 1);
+          id(defrost_state).publish_state("On");
     turn_off_action:
-      - lambda: id(tesla_ble_vehicle_id)->sendCarServerVehicleActionMessage (tesla_ble_vehicle::BLE_CarServer_VehicleAction::DEFROST_CAR, 0);
+      - lambda: |-
+          id(tesla_ble_vehicle_id)->sendCarServerVehicleActionMessage(tesla_ble_vehicle::BLE_CarServer_VehicleAction::DEFROST_CAR, 0);
+          id(defrost_state).publish_state("Off");
 
   - platform: template
     id: fast_poll_if_unlocked
@@ -366,15 +378,17 @@ lock:
     unlock_action:
       - lambda: |-
           id(tesla_ble_vehicle_id)->lockVehicle(VCSEC_RKEAction_E_RKE_ACTION_UNLOCK);
+          id(is_unlocked).publish_state(true);
     lock_action:
       - lambda: |-
           id(tesla_ble_vehicle_id)->lockVehicle(VCSEC_RKEAction_E_RKE_ACTION_LOCK);
+          id(is_unlocked).publish_state(false);
 
 cover:
   - platform: template
     id: cov_vent
     name: "Vent"
-    optimistic: false #### true
+    optimistic: true
     icon: mdi:car-door
     device_class: door
     lambda: |-
@@ -385,10 +399,12 @@ cover:
       }
     close_action: #### This way round to make the arrows follow the desired window motion
       - lambda: |-
-          id(tesla_ble_vehicle_id)->sendCarServerVehicleActionMessage (tesla_ble_vehicle::BLE_CarServer_VehicleAction::SET_WINDOWS_SWITCH, 0);
+          id(tesla_ble_vehicle_id)->sendCarServerVehicleActionMessage(tesla_ble_vehicle::BLE_CarServer_VehicleAction::SET_WINDOWS_SWITCH, 0);
+          id(windows_state).publish_state(false);
     open_action:
       - lambda: |-
-          id(tesla_ble_vehicle_id)->sendCarServerVehicleActionMessage (tesla_ble_vehicle::BLE_CarServer_VehicleAction::SET_WINDOWS_SWITCH, 1);
+          id(tesla_ble_vehicle_id)->sendCarServerVehicleActionMessage(tesla_ble_vehicle::BLE_CarServer_VehicleAction::SET_WINDOWS_SWITCH, 1);
+          id(windows_state).publish_state(true);
 
   - platform: template
     id: cov_charge_port
@@ -404,9 +420,13 @@ cover:
       }
 #    restore_mode: RESTORE_DEFAULT_OFF
     open_action:
-      - lambda: id(tesla_ble_vehicle_id)->sendCarServerVehicleActionMessage(tesla_ble_vehicle::BLE_CarServer_VehicleAction::SET_OPEN_CHARGE_PORT_DOOR,1);
+      - lambda: |-
+          id(tesla_ble_vehicle_id)->sendCarServerVehicleActionMessage(tesla_ble_vehicle::BLE_CarServer_VehicleAction::SET_OPEN_CHARGE_PORT_DOOR, 1);
+          id(is_charge_flap_open).publish_state(true);
     close_action:
-      - lambda: id(tesla_ble_vehicle_id)->sendCarServerVehicleActionMessage(tesla_ble_vehicle::BLE_CarServer_VehicleAction::SET_CLOSE_CHARGE_PORT_DOOR,1);
+      - lambda: |-
+          id(tesla_ble_vehicle_id)->sendCarServerVehicleActionMessage(tesla_ble_vehicle::BLE_CarServer_VehicleAction::SET_CLOSE_CHARGE_PORT_DOOR, 1);
+          id(is_charge_flap_open).publish_state(false);
   
   - platform: template
     id: cov_boot
@@ -422,9 +442,13 @@ cover:
       }
 #    restore_mode: RESTORE_DEFAULT_OFF
     open_action:
-      - lambda: id(tesla_ble_vehicle_id)->sendVCSECClosureMoveRequestMessage (VCSEC_ClosureMoveRequest_rearTrunk_tag, VCSEC_ClosureMoveType_E_CLOSURE_MOVE_TYPE_OPEN);
+      - lambda: |-
+          id(tesla_ble_vehicle_id)->sendVCSECClosureMoveRequestMessage(VCSEC_ClosureMoveRequest_rearTrunk_tag, VCSEC_ClosureMoveType_E_CLOSURE_MOVE_TYPE_OPEN);
+          id(is_boot_open).publish_state(true);
     close_action:
-      - lambda: id(tesla_ble_vehicle_id)->sendVCSECClosureMoveRequestMessage (VCSEC_ClosureMoveRequest_rearTrunk_tag, VCSEC_ClosureMoveType_E_CLOSURE_MOVE_TYPE_CLOSE);
+      - lambda: |-
+          id(tesla_ble_vehicle_id)->sendVCSECClosureMoveRequestMessage(VCSEC_ClosureMoveRequest_rearTrunk_tag, VCSEC_ClosureMoveType_E_CLOSURE_MOVE_TYPE_CLOSE);
+          id(is_boot_open).publish_state(false);
 
   - platform: template
     id: cov_frunk
@@ -440,7 +464,9 @@ cover:
         return COVER_CLOSED;
       }
     open_action:
-      - lambda: id(tesla_ble_vehicle_id)->sendVCSECClosureMoveRequestMessage (VCSEC_ClosureMoveRequest_frontTrunk_tag, VCSEC_ClosureMoveType_E_CLOSURE_MOVE_TYPE_OPEN);
+      - lambda: |-
+          id(tesla_ble_vehicle_id)->sendVCSECClosureMoveRequestMessage(VCSEC_ClosureMoveRequest_frontTrunk_tag, VCSEC_ClosureMoveType_E_CLOSURE_MOVE_TYPE_OPEN);
+          id(is_frunk_open).publish_state(true);
     
 number:
   - platform: template
@@ -457,6 +483,7 @@ number:
       - lambda: |-
           int var_x = static_cast<int>(x);
           id(tesla_ble_vehicle_id)->sendCarServerVehicleActionMessage(tesla_ble_vehicle::BLE_CarServer_VehicleAction::SET_CHARGING_AMPS, var_x);
+          id(max_amps).publish_state(var_x);
     lambda: |-
       if (id(max_amps).has_state())
       {
@@ -477,6 +504,7 @@ number:
       - lambda: |-
           int var_x = static_cast<int>(x);
           id(tesla_ble_vehicle_id)->sendCarServerVehicleActionMessage(tesla_ble_vehicle::BLE_CarServer_VehicleAction::SET_CHARGING_LIMIT, var_x);
+          id(max_soc).publish_state(var_x);
     lambda: |-
       if (id(max_soc).has_state())
       {
@@ -497,6 +525,7 @@ number:
       - lambda: |-
           int var_x = static_cast<int>(x);
           id(tesla_ble_vehicle_id)->sendCarServerVehicleActionMessage(tesla_ble_vehicle::BLE_CarServer_VehicleAction::SET_CLIMATE_TEMP, var_x);
+          id(driver_temp).publish_state(static_cast<float>(var_x));
     lambda: |-
       if (id(driver_temp).has_state())
       {
