@@ -624,6 +624,6 @@ script:
   - id: vcsec_active_reset
     mode: restart
     then:
-      - delay: 1s
+      - delay: 20s
       - switch.turn_off: sw_ble_connection
       - switch.turn_on: sw_ble_connection
