@@ -626,4 +626,5 @@ script:
     then:
       - delay: 1s
       - switch.turn_off: sw_ble_connection
+      - delay: 1s
       - switch.turn_on: sw_ble_connection
