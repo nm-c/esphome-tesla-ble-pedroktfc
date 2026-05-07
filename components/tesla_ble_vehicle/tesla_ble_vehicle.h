@@ -5,6 +5,7 @@
 #include <iterator>
 #include <vector>
 #include <queue>
+#include <optional>
 #include <array>
 #include <unordered_map>
 #include <functional>
@@ -313,7 +314,6 @@ namespace esphome
 
             int wakeVehicle(void);
             int lockVehicle (VCSEC_RKEAction_E lock);
-            void placeAtFrontOfQueue (UniversalMessage_Domain domain, std::function<int()> execute, std::string execute_name, BLE_CarServer_VehicleAction action = BLE_CarServer_VehicleAction::DO_NOTHING);
     
             int sendVCSECActionMessage(VCSEC_RKEAction_E action);
             int sendVCSECClosureMoveRequestMessage (int moveWhat, VCSEC_ClosureMoveType_E moveType);
@@ -435,7 +435,9 @@ namespace esphome
             std::queue<BLERXChunk> ble_read_queue_;
             std::queue<BLEResponse> response_queue_;
             std::queue<BLETXChunk> ble_write_queue_;
-            std::queue<BLECommand> command_queue_;
+            std::queue<BLECommand> high_priority_queue_;
+            std::queue<BLECommand> low_priority_queue_;
+            std::optional<BLECommand> current_command_;
 
             TeslaBLE::Client *tesla_ble_client_;
             uint32_t storage_handle_;
