@@ -20,6 +20,14 @@ tesla_ble_vehicle:
   fast_poll_if_unlocked: 0 # if != 0, fast polls are enabled when unlocked
   wake_on_boot: 0 # != 0 wakes car on device boot
 
+  # Vehicle-side push targets — component publish_state()'s into these
+  # number entities on each vehicleData response (mitsubishi_heatpump pattern).
+  # Numbers themselves are template numbers defined below; this just hands
+  # the component a pointer so it can update the slider position.
+  charging_limit_number:   charging_limit
+  set_climate_temp_number: set_climate_temp
+  charging_amps_number:    charging_amps
+
   is_asleep:
     id: "is_asleep"
     name: "Asleep"
@@ -474,13 +482,18 @@ cover:
       - script.execute: vcsec_active_reset
     
 number:
+  # Vehicle value is pushed by tesla_ble_vehicle component on each
+  # vehicleData response (publishNumber → publish_state). No lambda /
+  # update_interval polling — idle publish is 0. Wired via NUMBERS dict
+  # in the component's __init__.py (charging_*_number / set_climate_temp_number).
   - platform: template
     name: "Charging amps"
     id: charging_amps
     icon: mdi:ev-station
     unit_of_measurement: "A"
     mode: slider
-    update_interval: 2s
+    optimistic: true
+    restore_value: true
     min_value: 0
     max_value: $charging_amps_max
     step: 1
@@ -488,20 +501,14 @@ number:
       - lambda: |-
           int var_x = static_cast<int>(x);
           id(tesla_ble_vehicle_id)->sendCarServerVehicleActionMessage(tesla_ble_vehicle::BLE_CarServer_VehicleAction::SET_CHARGING_AMPS, var_x);
-          id(max_amps).publish_state(var_x);
-    lambda: |-
-      if (id(max_amps).has_state())
-      {
-        return id(max_amps).state;
-      }
-      else return (0);
   - platform: template
     name: "Charging limit"
     id: charging_limit
     icon: mdi:ev-station
     unit_of_measurement: "%"
     mode: slider
-    update_interval: 2s
+    optimistic: true
+    restore_value: true
     min_value: 50
     max_value: 100
     step: 1
@@ -509,20 +516,14 @@ number:
       - lambda: |-
           int var_x = static_cast<int>(x);
           id(tesla_ble_vehicle_id)->sendCarServerVehicleActionMessage(tesla_ble_vehicle::BLE_CarServer_VehicleAction::SET_CHARGING_LIMIT, var_x);
-          id(max_soc).publish_state(var_x);
-    lambda: |-
-      if (id(max_soc).has_state())
-      {
-        return id(max_soc).state;
-      }
-      else return (0);
   - platform: template
     name: "Climate temperature"
     id: set_climate_temp
     icon: mdi:thermometer-lines
     unit_of_measurement: "°C"
     mode: slider
-    update_interval: 2s
+    optimistic: true
+    restore_value: true
     min_value: 15
     max_value: 28
     step: 1
@@ -530,13 +531,6 @@ number:
       - lambda: |-
           int var_x = static_cast<int>(x);
           id(tesla_ble_vehicle_id)->sendCarServerVehicleActionMessage(tesla_ble_vehicle::BLE_CarServer_VehicleAction::SET_CLIMATE_TEMP, var_x);
-          id(driver_temp).publish_state(static_cast<float>(var_x));
-    lambda: |-
-      if (id(driver_temp).has_state())
-      {
-        return id(driver_temp).state;
-      }
-      else return (0);
     disabled_by_default: true
 
   - platform: template

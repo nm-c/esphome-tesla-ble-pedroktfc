@@ -1,6 +1,6 @@
 import esphome.codegen as cg
 import esphome.config_validation as cv
-from esphome.components import ble_client, binary_sensor, text_sensor, sensor
+from esphome.components import ble_client, binary_sensor, text_sensor, sensor, number
 from esphome.const import CONF_ID, STATE_CLASS_MEASUREMENT
 from enum import Enum, auto
 from dataclasses import dataclass
@@ -22,6 +22,17 @@ TeslaBLEVehicle = tesla_ble_vehicle_ns.class_(
 BinarySensorId = tesla_ble_vehicle_ns.enum("BinarySensorId", is_class=True)
 TextSensorId = tesla_ble_vehicle_ns.enum("TextSensorId", is_class=True)
 NumericSensorId = tesla_ble_vehicle_ns.enum("NumericSensorId", is_class=True)
+NumberId = tesla_ble_vehicle_ns.enum("NumberId", is_class=True)
+
+# YAML key -> NumberId mapping. Component pushes vehicle-side value into the
+# referenced number entity on each vehicleData response (mitsubishi_heatpump
+# pattern). The number itself is defined in client.yml as a template number
+# with optimistic+restore_value+set_action — no lambda/update_interval.
+NUMBERS = {
+    "charging_limit_number":     NumberId.ChargingLimit,
+    "set_climate_temp_number":   NumberId.ClimateTemp,
+    "charging_amps_number":      NumberId.ChargingAmps,
+}
 
 @dataclass
 class SensorSpec:
@@ -154,6 +165,9 @@ for key, spec in SENSORS.items():
     builder = SENSOR_TYPES_INFO[spec.type]["schema"]
     schema_dict[cv.Optional(key)] = (builder(**spec.schema_options))
 
+for key in NUMBERS:
+    schema_dict[cv.Optional(key)] = cv.use_id(number.Number)
+
 CONFIG_SCHEMA = (
     cv.Schema(schema_dict)
     .extend(cv.polling_component_schema("1min"))
@@ -185,3 +199,11 @@ async def to_code(config):
         sensor_obj = await info["creator"](config[key])
         setter = getattr(var, info["setter"])
         cg.add(setter(spec.setter_id, sensor_obj))
+
+    # Wire pre-existing number entities (defined in YAML by user) so the
+    # component can publish_state() on each vehicleData response.
+    for key, number_id in NUMBERS.items():
+        if key not in config:
+            continue
+        number_obj = await cg.get_variable(config[key])
+        cg.add(var.set_number(number_id, number_obj))

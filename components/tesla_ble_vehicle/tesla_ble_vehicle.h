@@ -14,6 +14,7 @@
 #include <esphome/components/binary_sensor/binary_sensor.h>
 #include <esphome/components/text_sensor/text_sensor.h>
 #include <esphome/components/sensor/sensor.h>
+#include <esphome/components/number/number.h>
 #include <esphome/components/ble_client/ble_client.h>
 #include <esphome/components/esp32_ble_tracker/esp32_ble_tracker.h>
 #include <esphome/core/component.h>
@@ -256,6 +257,12 @@ namespace esphome
             DriverTemp,
             Count
         };
+        enum class NumberId : uint8_t {
+            ChargingLimit,
+            ClimateTemp,
+            ChargingAmps,
+            Count
+        };
 
         class TeslaBLEVehicle : public PollingComponent,
                                 public ble_client::BLEClientNode
@@ -356,6 +363,11 @@ namespace esphome
             inline void publishSensor (NumericSensorId id, float value) {
                 publish_if (numeric_sensors_[static_cast<size_t>(id)], value);
             }
+            // Push vehicle-side value into a HA number entity (e.g. charge limit slider
+            // follows car). Same has_<field> guard as publishSensor — caller decides.
+            inline void publishNumber (NumberId id, float value) {
+                publish_if (numbers_[static_cast<size_t>(id)], value);
+            }
             void set_binary_sensor (BinarySensorId id, binary_sensor::BinarySensor* s) {
                 binary_sensors_[static_cast<size_t>(id)] = s;
             }
@@ -364,6 +376,9 @@ namespace esphome
             }
             void set_numeric_sensor (NumericSensorId id, sensor::Sensor* s) {
                 numeric_sensors_[static_cast<size_t>(id)] = s;
+            }
+            void set_number (NumberId id, number::Number* n) {
+                numbers_[static_cast<size_t>(id)] = n;
             }
             inline static constexpr std::pair<int, const char*> SHIFT_MAP[] = {
                 {CarServer_ShiftState_Invalid_tag,  "Invalid"},
@@ -455,6 +470,8 @@ namespace esphome
             std::array<text_sensor::TextSensor*, static_cast<size_t>(TextSensorId::Count)> text_sensors_{};
 
             std::array<sensor::Sensor*, static_cast<size_t>(NumericSensorId::Count)> numeric_sensors_{};
+
+            std::array<number::Number*, static_cast<size_t>(NumberId::Count)> numbers_{};
 
             std::vector<unsigned char> ble_read_buffer_;
 

@@ -1744,16 +1744,20 @@ if (ble_disconnected_ != BleConnected) // While disconnected update duration of 
               ESP_LOGI (TAG, "No data to set charger power");
             }
             if (carserver_response.response_msg.vehicleData.charge_state.which_optional_charge_limit_soc)
-            {            
-              publishSensor (NumericSensorId::MaxSoc, carserver_response.response_msg.vehicleData.charge_state.optional_charge_limit_soc.charge_limit_soc);
+            {
+              float v = carserver_response.response_msg.vehicleData.charge_state.optional_charge_limit_soc.charge_limit_soc;
+              publishSensor (NumericSensorId::MaxSoc, v);
+              publishNumber (NumberId::ChargingLimit, v);
             }
             else
             {
               ESP_LOGI (TAG, "No data to set soc limit");
             }
             if (carserver_response.response_msg.vehicleData.charge_state.which_optional_charging_amps)
-            {            
-              publishSensor (NumericSensorId::MaxAmps, carserver_response.response_msg.vehicleData.charge_state.optional_charging_amps.charging_amps);
+            {
+              float v = carserver_response.response_msg.vehicleData.charge_state.optional_charging_amps.charging_amps;
+              publishSensor (NumericSensorId::MaxAmps, v);
+              publishNumber (NumberId::ChargingAmps, v);
             }
             else
             {
@@ -1890,7 +1894,9 @@ if (ble_disconnected_ != BleConnected) // While disconnected update duration of 
             }
             if (carserver_response.response_msg.vehicleData.climate_state.which_optional_driver_temp_setting)
             {
-              publishSensor (NumericSensorId::DriverTemp, carserver_response.response_msg.vehicleData.climate_state.optional_driver_temp_setting.driver_temp_setting);
+              float v = carserver_response.response_msg.vehicleData.climate_state.optional_driver_temp_setting.driver_temp_setting;
+              publishSensor (NumericSensorId::DriverTemp, v);
+              publishNumber (NumberId::ClimateTemp, v);
             }
             else
             {
