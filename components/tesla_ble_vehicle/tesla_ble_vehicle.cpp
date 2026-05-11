@@ -1823,7 +1823,9 @@ if (ble_disconnected_ != BleConnected) // While disconnected update duration of 
                 case CarServer_ChargeState_ChargingState_Disconnected_tag:
                 case CarServer_ChargeState_ChargingState_NoPower_tag:
                 case CarServer_ChargeState_ChargingState_Stopped_tag:
-                  publishSensor (NumericSensorId::MinsToLimit, NAN); // If not charging, minutes to limit makes no sense
+                  // Don't publish NaN to a numeric sensor — HA rejects with
+                  // ValueError when device_class=duration. Sensor keeps its
+                  // last value; UI users can rely on charging_state instead.
                 default:
                   car_is_charging_ = NotCharging;
               }
